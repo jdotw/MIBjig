@@ -1,14 +1,14 @@
 MIBjig takes the text output of an snmpwalk command and parses the data to
 fake those same values via a Net-SNMP Agent Extension. 
 
-For example, you can do a walk of a particular device and then have MIBjib
+For example, you can do a walk of a particular device and then have MIBjig
 present those same SNMP OIDs and values via a host running Net-SNMP. 
 
 The walk must be done in Numeric Output mode (-On). Example:
 
 snmpwalk -v 1 -On -c [community] [address] [start oid] > walk.txt
 
-MIBjib can then be used to present those same OIDs via the local host
+MIBjig can then be used to present those same OIDs via the local host
 assuming it is using Net-SNMP and has the 'master agentx' line in its
 snmpd.conf file. Exampke:
 
