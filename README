@@ -1,0 +1,36 @@
+MIBjig takes the text output of an snmpwalk command and parses the data to
+fake those same values via a Net-SNMP Agent Extension. 
+
+For example, you can do a walk of a particular device and then have MIBjib
+present those same SNMP OIDs and values via a host running Net-SNMP. 
+
+The walk must be done in Numeric Output mode (-On). Example:
+
+snmpwalk -v 1 -On -c [community] [address] [start oid] > walk.txt
+
+MIBjib can then be used to present those same OIDs via the local host
+assuming it is using Net-SNMP and has the 'master agentx' line in its
+snmpd.conf file. Exampke:
+
+sudo ./mibjig -f walk.txt
+
+The -f argument specifies to run in foreground and the last argument is the
+text file containing the output of the snmpwalk done with the -On parameter. 
+
+If successful, the following output show appear:
+
+No log handling enabled - turning on stderr logging
+NET-SNMP version 5.4.2.1 AgentX subagent connected
+
+If mibjig is unable to connect to the parent Net-SNMP process, ensure snmpd
+is running and has the 'master agentx' configuration line in the snmpd.conf
+file usually found in /etc/snmp/snmpd.conf
+
+When doing the snmpwalk from the source device, it is best to limit the walk
+to the enterprises or experimental portions of the MIB so that you do not
+double-up on the common MIBs that are already implemented by Net-SNMP. That
+is, the input walk file should only contain OIDs that are not already
+present on the system when running Net-SNMP. 
+
+James Wilson
+scotchandcode.com
