@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(src/main.c)
 
-VERSION=0.0.1
+VERSION=1.0.0
 PACKAGE=mibjig
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)

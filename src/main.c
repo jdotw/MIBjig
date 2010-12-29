@@ -5,6 +5,7 @@
 #endif /* HAVE_SIGNAL */
 #include <net-snmp/net-snmp-includes.h>
 #include <net-snmp/agent/net-snmp-agent-includes.h>
+#include "parse.h"
 
 const char *app_name = "mibjig";
 
@@ -183,6 +184,9 @@ main (int argc, char **argv)
     /* initialize tcpip, if necessary */
     SOCK_STARTUP;
   }
+
+  /* Parse file */
+  m_parse(argv[argc-1]);
 
   /* initialize the agent library */
   init_agent(app_name);

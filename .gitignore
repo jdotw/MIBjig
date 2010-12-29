@@ -13,7 +13,6 @@ config.log
 config.status
 config.sub
 config.h
-configure
 Makefile.in
 Makefile
 install-sh
