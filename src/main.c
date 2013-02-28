@@ -26,7 +26,7 @@ static void
 usage(const char *prog)
 {
     fprintf(stderr,
-            "USAGE: %s [OPTIONS] [WALK-OUTPUT.TXT]\n"
+            "USAGE: %s [OPTIONS] [WALK-OUTPUT.TXT] [agentaddr]\n"
             "\n"
             "OPTIONS:\n", prog);
 
@@ -54,6 +54,7 @@ usage(const char *prog)
 #endif /* DISABLE_MIB_LOADING */
     fprintf(stderr,
             "  -v\t\t\tdisplay package version number\n"
+            "  -X\t\t\tbecome an AgentX subagent\n"
             "  -x TRANSPORT\tconnect to master agent using TRANSPORT\n"
             "  -p\t\t\tenable Xsnmp performance logging\n");
     exit(1);
@@ -72,9 +73,9 @@ main (int argc, char **argv)
   int arg;
   char* cp = NULL;
   int dont_fork = 0, do_help = 0;
-  int use_agentx = 0;   /* XXX */
+  int use_agentx = 0;
 
-  while ((arg = getopt(argc, argv, "dD:fhHL:Xp"
+  while ((arg = getopt(argc, argv, "c:CdD:fhHL:Xp"
 #ifndef DISABLE_MIB_LOADING
                        "m:M:"
 #endif /* DISABLE_MIB_LOADING */
@@ -82,8 +83,19 @@ main (int argc, char **argv)
 #ifndef DISABLE_MIB_LOADING
                        "P:"
 #endif /* DISABLE_MIB_LOADING */
-                       "vx:")) != EOF) {
+                       "vx:-:")) != EOF) {
     switch (arg) {
+    case '-':
+      if (strcmp(optarg, "help") == 0) {
+        do_help = 1;
+        break;
+      }
+      if (strcmp(optarg, "version") == 0) {
+        version();
+        break;
+      }
+      handle_long_opt(optarg);
+
     case 'd':
       netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID,
                              NETSNMP_DS_LIB_DUMP_PACKET, 1);
@@ -153,6 +165,10 @@ main (int argc, char **argv)
       version();
       break;
 
+    case 'X':
+      use_agentx = 1;
+      break;
+
     case 'x':
       if (optarg != NULL) {
         netsnmp_ds_set_string(NETSNMP_DS_APPLICATION_ID,
@@ -167,6 +183,20 @@ main (int argc, char **argv)
       usage(argv[0]);
       break;
     }
+  }
+
+  /* 0 args? bad. */
+  if (optind >= argc && !do_help) {
+    fprintf(stderr, "need mib file to load\n");
+    usage(argv[0]);
+    exit(1);
+  }
+
+  /* too many args? bad. */
+  if (optind + 1 + (use_agentx ? 0 : 1) < argc) {
+    fprintf(stderr, "too many arguments - optind %d argc %d\n", optind, argc);
+    usage(argv[0]);
+    exit(1);
   }
 
   if (do_help) {
@@ -189,9 +219,21 @@ main (int argc, char **argv)
   }
 
   /* Parse file */
-  m_parse(argv[argc-1]);
+  if (optind < argc) {
+    char *objfile = argv[optind++];
 
-  snmp_log(LOG_INFO, "mibjig parsed configuration file %s, ready to serve\n", argv[argc-1]);
+    m_parse(objfile);
+
+    snmp_log(LOG_INFO, "mibjig parsed configuration file %s, ready to serve\n", objfile);
+  }
+
+  if (optind < argc) {
+    /*
+     * We accept a single agentaddr specification on the command line.
+     */
+    netsnmp_ds_set_string(NETSNMP_DS_APPLICATION_ID,
+        NETSNMP_DS_AGENT_PORTS, argv[optind++]);
+  }
 
   /* initialize the agent library */
   init_agent(app_name);
