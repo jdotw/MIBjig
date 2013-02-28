@@ -72,6 +72,7 @@ main (int argc, char **argv)
   int arg;
   char* cp = NULL;
   int dont_fork = 0, do_help = 0;
+  int use_agentx = 0;   /* XXX */
 
   while ((arg = getopt(argc, argv, "dD:fhHL:Xp"
 #ifndef DISABLE_MIB_LOADING
@@ -172,9 +173,11 @@ main (int argc, char **argv)
     netsnmp_ds_set_boolean(NETSNMP_DS_APPLICATION_ID,
                            NETSNMP_DS_AGENT_NO_ROOT_ACCESS, 1);
   } else {
-    /* we are a subagent */
-    netsnmp_ds_set_boolean(NETSNMP_DS_APPLICATION_ID,
-                           NETSNMP_DS_AGENT_ROLE, 1);
+    if (use_agentx) {
+      /* we are a subagent */
+      netsnmp_ds_set_boolean(NETSNMP_DS_APPLICATION_ID,
+                             NETSNMP_DS_AGENT_ROLE, 1);
+    }
 
     if (!dont_fork) {
       if (netsnmp_daemonize(1, snmp_stderrlog_status()) != 0)
@@ -188,6 +191,8 @@ main (int argc, char **argv)
   /* Parse file */
   m_parse(argv[argc-1]);
 
+  snmp_log(LOG_INFO, "mibjig parsed configuration file %s, ready to serve\n", argv[argc-1]);
+
   /* initialize the agent library */
   init_agent(app_name);
 
@@ -198,6 +203,21 @@ main (int argc, char **argv)
     fprintf(stderr, "Configuration directives understood:\n");
     read_config_print_usage("  ");
     exit(0);
+  }
+
+  if (!use_agentx) {
+    /*
+     * Note that we don't call init_mib_modules(), so we don't have to worry
+     * about the standard modules interfering with the data we loaded from
+     * the file.
+     */
+    if (init_master_agent() != 0) {
+      /*
+       * Some error opening one of the specified agent transports.  
+       */
+      snmp_log(LOG_ERR, "Server Exiting with code 1\n");
+      exit(1);
+    }
   }
 
   /* In case we received a request to stop (kill -TERM or kill -INT) */
