@@ -1,0 +1,6 @@
+language: c
+compiler:
+ - clang
+ - gcc
+install: sudo apt-get install net-snmp-devel
+script: './bootstrap_linux.sh && make'
