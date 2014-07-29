@@ -26,11 +26,14 @@ static void
 usage(const char *prog)
 {
     fprintf(stderr,
-            "USAGE: %s [OPTIONS] [WALK-OUTPUT.TXT] [agentaddr]\n"
+            "USAGE: %s [OPTIONS] WALK-OUTPUT.TXT [agentaddr]\n"
             "\n"
             "OPTIONS:\n", prog);
 
     fprintf(stderr,
+            "  -c FILE[,...]\t\tread FILE(s) as configuration file(s)\n"
+            "  -C\t\t\tdo not read the default configuration files\n"
+            "\t\t\t  (config search path: %s)\n"
             "  -d\t\t\tdump all traffic\n"
             "  -D TOKEN[,...]\tturn on debugging output for the specified "
             "TOKENs\n"
@@ -38,13 +41,16 @@ usage(const char *prog)
             "  -f\t\t\tDo not fork() from the calling shell.\n"
             "  -h\t\t\tdisplay this help message\n"
             "  -H\t\t\tdisplay a list of configuration file directives\n"
-            "  -L LOGOPTS\t\tToggle various defaults controlling logging:\n");
+            "  -L LOGOPTS\t\tToggle various defaults controlling logging:\n",
+            get_configuration_directory());
     snmp_log_options_usage("\t\t\t  ", stderr);
 #ifndef DISABLE_MIB_LOADING
     fprintf(stderr,
             "  -m MIB[:...]\t\tload given list of MIBs (ALL loads "
             "everything)\n"
-            "  -M DIR[:...]\t\tlook in given list of directories for MIBs\n");
+            "  -M DIR[:...]\t\tlook in given list of directories for MIBs\n"
+            "\t\t\t  (default %s)\n",
+            netsnmp_get_mib_directory());
 #endif /* DISABLE_MIB_LOADING */
 #ifndef DISABLE_MIB_LOADING
     fprintf(stderr,
@@ -55,8 +61,15 @@ usage(const char *prog)
     fprintf(stderr,
             "  -v\t\t\tdisplay package version number\n"
             "  -X\t\t\tbecome an AgentX subagent\n"
-            "  -x TRANSPORT\tconnect to master agent using TRANSPORT\n"
-            "  -p\t\t\tenable Xsnmp performance logging\n");
+            "  -x TRANSPORT\t\tconnect to master agent using TRANSPORT\n");
+    fprintf(stderr,
+            "\n"
+            "  --option=value\tconfiguration options (e.g., to run without a configuration\n"
+            "\t\t\tfile, try --rocommunity=public)\n");
+    fprintf(stderr,
+            "\n"
+            "  (in master agent mode, community or user configuration is required, either\n"
+            "  in the mibjig.conf configuration file or on the command line.)\n");
     exit(1);
 }
 
@@ -95,6 +108,21 @@ main (int argc, char **argv)
         break;
       }
       handle_long_opt(optarg);
+
+    case 'c':
+        if (optarg != NULL) {
+            netsnmp_ds_set_string(NETSNMP_DS_LIBRARY_ID,
+                                  NETSNMP_DS_LIB_OPTIONALCONFIG, optarg);
+        } else {
+            usage(argv[0]);
+        }
+        break;
+
+    case 'C':
+        netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID,
+                               NETSNMP_DS_LIB_DONT_READ_CONFIGS, 1);
+        break;
+
 
     case 'd':
       netsnmp_ds_set_boolean(NETSNMP_DS_LIBRARY_ID,
