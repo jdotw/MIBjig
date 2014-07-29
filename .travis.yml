@@ -1,0 +1,8 @@
+language: c
+compiler:
+ - clang
+ - gcc
+install:
+ - sudo apt-get update -qq
+ - sudo apt-get install -y libsnmp-dev
+script: './bootstrap_linux.sh && make'

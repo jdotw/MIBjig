@@ -9,6 +9,7 @@
 #ifdef HAVE_SIGNAL
 #include <signal.h>
 #endif /* HAVE_SIGNAL */
+#include <errno.h>
 #include <net-snmp/net-snmp-includes.h>
 #include <net-snmp/agent/net-snmp-agent-includes.h>
 
@@ -146,7 +147,7 @@ m_value* value_from_string(char *type_str, char *val_str)
   else if (strlen(type_str)==0) val->type = ASN_OCTET_STR;
   else 
   {
-    printf ("*** Unknown value type %s encountered, using string representation\n", type_str);
+    snmp_log(LOG_ERR, "*** Unknown value type %s encountered, using string representation\n", type_str);
     val->type = ASN_OCTET_STR;
   }
 
@@ -194,7 +195,7 @@ m_value* value_from_string(char *type_str, char *val_str)
       val->val = oid_from_string(val_str, &val->val_len);
       break;
     default:
-      printf ("*** Failed to create value for %s/%s (val->type is unknown)\n", type_str, val_str);
+      snmp_log(LOG_ERR, "*** Failed to create value for %s/%s (val->type is unknown)\n", type_str, val_str);
       return NULL;
   }
 
@@ -206,11 +207,11 @@ void m_parse (char *filename)
   /* Open File */
   int fd = open(filename, O_RDONLY);
   if (fd == -1) 
-  { printf("m_parse failed to open %s", filename); return; }
+  { snmp_log(LOG_ERR, "m_parse failed to open %s: %s\n", filename, strerror(errno)); return; }
   size_t filesize = lseek(fd, 0, SEEK_END);
   void *source = mmap(0, filesize, PROT_READ, MAP_SHARED, fd, 0);
-  if (source == (void *)-1) 
-  { printf("m_parse failed to mmap %s", filename); return; }
+  if (source == MAP_FAILED)
+  { snmp_log(LOG_ERR, "m_parse failed to mmap %s: %s\n", filename, strerror(errno)); return; }
 
   /* Compile the line-matching RegExp.
    * Matches lines like:
@@ -223,7 +224,7 @@ void m_parse (char *filename)
   int erroffset;
   pcre *re = pcre_compile("^((?:\\.[0-9]+)+) =(?: ([\\w-]+)\\:)? \"?(.*)$", PCRE_MULTILINE, &error, &erroffset, NULL);
 
-  if (!re) { printf("m_parse failed to compile line-matching RE"); return; }
+  if (!re) { snmp_log(LOG_ERR, "m_parse failed to compile line-matching RE\n"); return; }
 
   /* Parse the mmap'd input file */
   int ovector[OVECCOUNT];
@@ -261,7 +262,7 @@ void m_parse (char *filename)
       char *type_str = string_at_vector(source, ovector, 4);
       char *value_str = string_at_vector(source, ovector, 6);
 
-//      printf ("OID='%s' TYPE='%s' VALUE='%s'\n", oid_str, type_str, value_str);
+//      snmp_log(LOG_INFO, "OID='%s' TYPE='%s' VALUE='%s'\n", oid_str, type_str, value_str);
 
       /* Extract the oid from the string */
       size_t oid_len;
@@ -286,7 +287,7 @@ void m_parse (char *filename)
     else
     {
       /* Other matching error occurred */
-      printf("m_parse other matching error occurred\n");
+      snmp_log(LOG_ERR, "m_parse other matching error occurred\n");
       pcre_free(re);    
       return;
     }
