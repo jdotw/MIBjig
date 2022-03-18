@@ -153,7 +153,6 @@ m_value* value_from_string(char *type_str, char *val_str)
 
   /* Set value according to the ASN type */
   uint32_t int32 = 0;
-  uint64_t int64 = 0;
   in_addr_t in_addr;
   switch (val->type)
   {
@@ -166,10 +165,10 @@ m_value* value_from_string(char *type_str, char *val_str)
       val->val_len = sizeof(uint32_t);
       break;
     case ASN_COUNTER64:
-      int64 = strtoull(val_str, NULL, 10);
-      val->val = malloc(sizeof(uint64_t));
-      memcpy(val->val, &int32, sizeof(uint64_t));
-      val->val_len = sizeof(uint64_t);
+      /* net-snmp has an internal representation of counter64 */
+      val->val = malloc(sizeof(struct counter64));
+      read64(val->val, val_str);
+      val->val_len = sizeof(struct counter64);
       break;
     case ASN_OCTET_STR:
       if (strcmp(type_str, "Hex-STRING")==0)
