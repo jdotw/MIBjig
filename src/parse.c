@@ -1,3 +1,4 @@
+#define _GNU_SOURCE     // for asprintf
 #include <stdio.h>
 #include <pcre.h>
 #include <unistd.h>
@@ -26,7 +27,9 @@
 char* string_at_vector(char *source, int *vectors, int index)
 {
   char *str;
-  asprintf(&str, "%.*s", (int) (vectors[index+1] - vectors[index]), source + vectors[index]);
+  if (asprintf(&str, "%.*s", (int) (vectors[index+1] - vectors[index]), source + vectors[index]) < 0) {
+    return NULL;
+  }
   int i;
   for (i=strlen(str)-1; i >= 0; i--)
   {
@@ -74,7 +77,7 @@ oid* oid_from_string(char *str, size_t *oid_len)
   return oid_array;
 }
 
-void* hex_data_from_string(char *hex_string, unsigned long *hex_len)
+void* hex_data_from_string(char *hex_string, size_t *hex_len)
 {
   /* Converts a "20 2B 00 05 1E 36 75 10" style string into 
    * an array of bytes that represent the hex string
@@ -87,7 +90,10 @@ void* hex_data_from_string(char *hex_string, unsigned long *hex_len)
   for (i=0; i < strlen(hex_string); i=i+3)
   {
     char *hex_substring;
-    asprintf(&hex_substring, "0x%.*s", 2, hex_string+i);
+    if (asprintf(&hex_substring, "0x%.*s", 2, hex_string+i) < 0) {
+      free(hex_array);
+      return NULL;
+    }
     hex_array[*hex_len] = (u_char) strtol(hex_substring, NULL, 16);
     *hex_len = (*hex_len) + 1;
     free (hex_substring);
