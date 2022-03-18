@@ -262,7 +262,7 @@ void m_parse (char *filename)
       char *type_str = string_at_vector(source, ovector, 4);
       char *value_str = string_at_vector(source, ovector, 6);
 
-//      snmp_log(LOG_INFO, "OID='%s' TYPE='%s' VALUE='%s'\n", oid_str, type_str, value_str);
+      DEBUGMSGTL(("mibjig:parse", "OID='%s' TYPE='%s' VALUE='%s'\n", oid_str, type_str, value_str));
 
       /* Extract the oid from the string */
       size_t oid_len;
@@ -278,7 +278,18 @@ void m_parse (char *filename)
         i_hashtable_key_free(key);
 
         /* Add SNMP Handler for the OID */
-        //printf ("Registering value %s\n", oid_str);
+        DEBUGIF("mibjig:parse") {
+            netsnmp_variable_list l;
+            l.next_variable = NULL;
+            l.name = oid_array;
+            l.name_length = oid_len;
+            l.type = val->type;
+            l.val.string = (u_char *)val->val;      // string is just a member of the union
+            l.val_len = val->val_len;
+            DEBUGMSGTL(("mibjig:parse", "%s = %s: %s parsed to ", oid_str, type_str, value_str));
+            DEBUGMSGVAR(("mibjig:parse", &l));
+            DEBUGMSG_NC(("mibjig:parse", "\n"));
+        }
         netsnmp_register_instance(
           netsnmp_create_handler_registration(oid_str, m_value_snmp_handler,
                                                    oid_array, oid_len, HANDLER_CAN_RONLY));
