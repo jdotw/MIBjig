@@ -1,36 +1,47 @@
 MIBjig takes the text output of an snmpwalk command and parses the data to
-fake those same values via a Net-SNMP Agent Extension. 
+fake those same values via either an agentx subagent, or a full SNMP agent.
 
 For example, you can do a walk of a particular device and then have MIBjig
-present those same SNMP OIDs and values via a host running Net-SNMP. 
+present those same SNMP OIDs and values via a host running Net-SNMP.
 
 The walk must be done in Numeric Output mode (-On). Example:
 
-snmpwalk -v 1 -On -c [community] [address] [start oid] > walk.txt
+snmpwalk -v 2c -On -c [community] [address] [start oid] > walk.txt
 
 MIBjig can then be used to present those same OIDs via the local host
 assuming it is using Net-SNMP and has the 'master agentx' line in its
 snmpd.conf file. Exampke:
 
-sudo ./mibjig -f walk.txt
+./mibjig --rocommunity=public -f walk.txt udp:6000
 
-The -f argument specifies to run in foreground and the last argument is the
-text file containing the output of the snmpwalk done with the -On parameter. 
+The --rocommunity=public specifies the authentication mechanism;
+snmpd.conf entries can be specified with this mechanism; if you need
+more complex authorization configuration you can use mibjig.conf, or
+add "-c <config file>".
 
-If successful, the following output show appear:
+The -f argument specifies to run in foreground
 
-No log handling enabled - turning on stderr logging
-NET-SNMP version 5.4.2.1 AgentX subagent connected
+The next argument is the text file containing the output of the snmpwalk
+done with the -On parameter.
 
-If mibjig is unable to connect to the parent Net-SNMP process, ensure snmpd
-is running and has the 'master agentx' configuration line in the snmpd.conf
-file usually found in /etc/snmp/snmpd.conf
+The final argument is the transport configuration (equivalent to
+"agentaddr" in snmpd.conf).  (If you specify a port below 1024,
+such as the default 161, you must run mibjig as root)
 
-When doing the snmpwalk from the source device, it is best to limit the walk
-to the enterprises or experimental portions of the MIB so that you do not
-double-up on the common MIBs that are already implemented by Net-SNMP. That
-is, the input walk file should only contain OIDs that are not already
-present on the system when running Net-SNMP. 
+If successful, the following output should appear:
+
+mibjig parsed configuration file walk.txt, ready to serve
+listening for SNMP on udp:6000
+
+If you would like to use AgentX to connect to an existing snmpd,
+omit the "--rocommunity" configuration, use "-X" to enable AgentX, and
+optionally "-x <path-to-agentx-socket>".  If mibjig is unable to connect
+to the parent Net-SNMP process, ensure snmpd is running and has the
+'master agentx' configuration line in the snmpd.conf file usually found
+in /etc/snmp/snmpd.conf
 
 James Wilson
 scotchandcode.com
+
+Bill Fenner
+fenner@gmail.com
