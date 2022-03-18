@@ -52,6 +52,7 @@ oid* oid_from_string(char *str, size_t *oid_len)
   *oid_len = 0;
   int i;
   size_t str_len = strlen(str);           // Must be saved here because it will change with substring termination
+  DEBUGMSGTL(("mibjig:oidparse", "Parsing OID %s\n", str));
   for (i=0; i < str_len; i++)
   {
     if (str[i] == '.') 
@@ -61,6 +62,7 @@ oid* oid_from_string(char *str, size_t *oid_len)
       str[i] = '\0';  // Null terminate the substring
     }
   }
+  DEBUGMSGTL(("mibjig:oidparse", "Resulting length %d\n", *oid_len));
 
   /* Malloc new oid array */
   oid *oid_array = (oid *) calloc(*oid_len, sizeof(oid));
@@ -143,7 +145,6 @@ m_value* value_from_string(char *type_str, char *val_str)
   else if (strcmp(type_str, "STRING")==0) val->type = ASN_OCTET_STR;
   else if (strcmp(type_str, "Hex-STRING")==0) val->type = ASN_OCTET_STR;
   else if (strcmp(type_str, "Timeticks")==0) val->type = ASN_TIMETICKS;
-  else if (strcmp(type_str, "OID")==0) val->type = ASN_OBJECT_ID;
   else if (strcmp(type_str, "Gauge32")==0) val->type = ASN_GAUGE;
   else if (strcmp(type_str, "OID")==0) val->type = ASN_OBJECT_ID;
   else if (strcmp(type_str, "Counter32")==0) val->type = ASN_COUNTER;
@@ -160,6 +161,7 @@ m_value* value_from_string(char *type_str, char *val_str)
   /* Set value according to the ASN type */
   uint32_t int32 = 0;
   in_addr_t in_addr;
+  size_t oid_len;
   switch (val->type)
   {
     case ASN_INTEGER:
@@ -197,7 +199,8 @@ m_value* value_from_string(char *type_str, char *val_str)
       val->val = timeticks_from_string(val_str, &val->val_len);
       break;
     case ASN_OBJECT_ID:
-      val->val = oid_from_string(val_str, &val->val_len);
+      val->val = oid_from_string(val_str, &oid_len);
+      val->val_len = oid_len * sizeof(oid);     /* for values, the len is the size, not the count */
       break;
     default:
       snmp_log(LOG_ERR, "*** Failed to create value for %s/%s (val->type is unknown)\n", type_str, val_str);
