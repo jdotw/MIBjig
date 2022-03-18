@@ -108,6 +108,7 @@ main (int argc, char **argv)
         break;
       }
       handle_long_opt(optarg);
+      break;
 
     case 'c':
         if (optarg != NULL) {
@@ -256,11 +257,13 @@ main (int argc, char **argv)
   }
 
   if (optind < argc) {
+    char *agentaddr = argv[optind++];
+    snmp_log(LOG_INFO, "listening for SNMP on %s\n", agentaddr);
     /*
      * We accept a single agentaddr specification on the command line.
      */
     netsnmp_ds_set_string(NETSNMP_DS_APPLICATION_ID,
-        NETSNMP_DS_AGENT_PORTS, argv[optind++]);
+        NETSNMP_DS_AGENT_PORTS, agentaddr);
   }
 
   /* initialize the agent library */
